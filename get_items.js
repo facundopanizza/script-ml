@@ -13,9 +13,9 @@ const args = minimist(process.argv.slice(2), {
   },
 });
 
-const get_categories = async (site_id) => {
+const get_category = async (category) => {
   const response = await axios.get(
-    `https://api.mercadolibre.com/sites/${site_id}/categories`
+    `https://api.mercadolibre.com/categories/${category}`
   );
 
   return response.data;
@@ -35,17 +35,29 @@ const get_items = async (seller_id, site_id, offset) => {
   return response.data;
 };
 
-const write_items_in_file = (
-  items,
-  categories,
-  site_id,
-  seller_id,
-  file_name
-) => {
+const get_unique_categories_and_map = async (categories) => {
+  let uniqueCategories = [...new Set(categories)];
+
+  return Promise.all(
+    uniqueCategories.map(async (category) => {
+      return await get_category(category);
+    })
+  );
+};
+
+const write_items_in_file = async (items, site_id, seller_id, file_name) => {
   let output = '';
 
+  let categories = items.map((item) => item.category_id);
+
+  let uniqueCategories = await get_unique_categories_and_map(categories);
+
   items.forEach((item) => {
-    categories.forEach((category) => (item.category_name = category.name));
+    uniqueCategories.forEach((category) => {
+      if (category.id == item.category_id) {
+        item.category_name = category.name;
+      }
+    });
 
     output += `${item.id} - ${item.title} - ${item.category_id} - ${item.category_name}\n`;
   });
@@ -89,7 +101,6 @@ const write_items_in_file = (
     offset = args.o;
   }
 
-  const categories = await get_categories(site_id);
   const sellers_id = seller_id.toString().split(',');
 
   if (args.a) {
@@ -103,13 +114,13 @@ const write_items_in_file = (
         offset += 50;
       }
 
-      write_items_in_file(items, categories, site_id, id);
+      write_items_in_file(items, site_id, id);
     });
   } else {
     sellers_id.forEach(async (id) => {
       let { results: items } = await get_items(id, site_id, offset);
 
-      write_items_in_file(items, categories, site_id, id);
+      write_items_in_file(items, site_id, id);
     });
   }
 })();
