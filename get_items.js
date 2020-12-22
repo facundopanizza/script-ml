@@ -90,7 +90,7 @@ const write_items_in_file = (
   }
 
   const categories = await get_categories(site_id);
-  const sellers_id = seller_id.split(',');
+  const sellers_id = seller_id.toString().split(',');
 
   if (args.a) {
     sellers_id.forEach(async (id) => {
