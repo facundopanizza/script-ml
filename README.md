@@ -9,3 +9,5 @@ Usage: get_items [arguments]
         
 Example:  
   node get_items.js -a -s 179571326 -i MLA
+  
+  The output file will be named {date-time}_{site_id}_{seller_id}.log
